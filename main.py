@@ -2,22 +2,30 @@ from flask import Flask, request, redirect, session, send_file, jsonify, render_
 import os
 import json
 from io import BytesIO
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+from reportlab.platypus import SimpleDocTemplate, Paragraph
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib.pagesizes import A4
+from openai import OpenAI
 
-from openai import OpenAI   # ✅ NEW IMPORT
-
+# ---------- APP SETUP ----------
 app = Flask(__name__)
 app.secret_key = "secret123"
 
-# ✅ OPENAI CLIENT
-from openai import OpenAI
-import os
-
+# ---------- OPENAI CLIENT ----------
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-# ---------- DATABASE ----------
+def call_ai(prompt):
+    """Call OpenAI API to generate text from prompt"""
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[{"role": "user", "content": prompt}]
+        )
+        return response.choices[0].message.content
+    except Exception as e:
+        return f"Error: {str(e)}"
+
+# ---------- JSON DATABASE ----------
 USERS_FILE = "users.json"
 PROFILE_FILE = "profile.json"
 HISTORY_FILE = "history.json"
@@ -30,7 +38,7 @@ def load_json(file):
 
 def save_json(file, data):
     with open(file, "w") as f:
-        json.dump(data, f)
+        json.dump(data, f, indent=4)
 
 # ---------- JOB DATABASE ----------
 JOB_DATABASE = {
@@ -42,39 +50,16 @@ JOB_DATABASE = {
     "Software Engineer": ["Java", "Python", "DSA"]
 }
 
-# ---------- OPENAI FUNCTION ----------
-from openai import OpenAI
-import os
-
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-
-def call_ai(prompt):
-    try:
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {"role": "user", "content": prompt}
-            ]
-        )
-        return response.choices[0].message.content
-
-    except Exception as e:
-        return f"Error: {str(e)}"
-
-# ---------- SCORE ----------
 def calculate_score(user_skills, role):
+    """Calculate skill match percentage and missing skills"""
     required = JOB_DATABASE.get(role, [])
     user = [s.lower() for s in user_skills]
-
     matched = sum(1 for r in required if any(r.lower() in u for u in user))
     score = (matched / len(required)) * 100 if required else 0
-
     missing = [r for r in required if not any(r.lower() in u for u in user)]
-
     return round(score, 2), missing
 
 # ---------- ROUTES ----------
-
 @app.route('/')
 def home():
     return render_template('home.html')
@@ -83,74 +68,58 @@ def home():
 def login():
     users = load_json(USERS_FILE)
     error = None
-
     if request.method == 'POST':
         u = request.form['username']
         p = request.form['password']
-
         if users.get(u) == p:
             session['user'] = u
             return redirect('/dashboard')
         else:
             error = "Invalid login"
-
     return render_template('login.html', error=error)
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     users = load_json(USERS_FILE)
     error = None
-
     if request.method == 'POST':
         u = request.form['username']
         p = request.form['password']
-
         if u in users:
             error = "User exists"
         else:
             users[u] = p
             save_json(USERS_FILE, users)
             return redirect('/login')
-
     return render_template('register.html', error=error)
 
 @app.route('/dashboard', methods=['GET', 'POST'])
 def dashboard():
     if 'user' not in session:
         return redirect('/login')
-
     if request.method == 'POST':
         data = request.form.to_dict()
         session['data'] = data
-
         profiles = load_json(PROFILE_FILE)
         profiles[session['user']] = data
         save_json(PROFILE_FILE, profiles)
-
         return redirect('/result')
-
     return render_template('dashboard.html')
 
-# ✅ PROFILE PAGE
 @app.route('/profile')
 def profile():
     if 'user' not in session:
         return redirect('/login')
-
     profiles = load_json(PROFILE_FILE)
     user_data = profiles.get(session['user'], {})
-
     return render_template('profile.html', data=user_data)
 
-# ✅ HISTORY PAGE
 @app.route('/history')
 def history():
     if 'user' not in session:
         return redirect('/login')
-
     history = load_json(HISTORY_FILE)
     user_history = history.get(session['user'], [])
-
     return render_template('history.html', history=user_history)
 
 @app.route('/generate_summary', methods=['POST'])
@@ -163,7 +132,6 @@ def generate_summary():
     Skills: {request.form['skills']}
     Experience: {request.form['experience']}
     """
-
     summary = call_ai(prompt)
     return jsonify({"summary": summary})
 
@@ -172,11 +140,10 @@ def result():
     data = session.get('data')
     if not data:
         return redirect('/dashboard')
-
     skills = [s.strip() for s in data['skills'].split(',')]
     score, missing = calculate_score(skills, data['job'])
 
-    # save history
+    # Save history
     history = load_json(HISTORY_FILE)
     history.setdefault(session['user'], []).append(data)
     save_json(HISTORY_FILE, history)
@@ -186,19 +153,20 @@ def result():
 @app.route('/download')
 def download():
     data = session.get('data')
-
+    if not data:
+        return redirect('/dashboard')
+    
     buffer = BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=A4)
-
     styles = getSampleStyleSheet()
-    story = []
-
-    story.append(Paragraph(data['name'], styles['Heading2']))
-    story.append(Paragraph(data['skills'], styles['Normal']))
-
+    story = [
+        Paragraph(f"Name: {data.get('name', '')}", styles['Heading2']),
+        Paragraph(f"Role: {data.get('job', '')}", styles['Heading3']),
+        Paragraph(f"Skills: {data.get('skills', '')}", styles['Normal']),
+        Paragraph(f"Experience: {data.get('experience', '')}", styles['Normal'])
+    ]
     doc.build(story)
     buffer.seek(0)
-
     return send_file(buffer, as_attachment=True, download_name="resume.pdf")
 
 # ---------- RUN ----------
