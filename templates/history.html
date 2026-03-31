@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Resume History</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+ 
+<div class="navbar">
+    🧠 AI Resume Builder
+    <span style="float:right; font-size:14px; font-weight:400;">
+        <a href="/dashboard" style="color:rgba(255,255,255,0.8);">Dashboard</a> &nbsp;|&nbsp;
+        <a href="/logout" style="color:rgba(255,255,255,0.8);">Logout</a>
+    </span>
+</div>
+ 
+<div class="container">
+    <h2 style="margin-bottom:6px;">📋 Resume History</h2>
+    <p style="color:#6b7280; font-size:14px; margin-bottom:20px;">Your last 10 generated resumes</p>
+ 
+    {% if entries %}
+        {% for entry in entries %}
+        <div class="history-card">
+ 
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                    <strong style="font-size:16px;">{{ entry.name }}</strong>
+                    <span class="badge" style="margin-left:8px;">{{ entry.job }}</span>
+                </div>
+                <span style="font-size:12px; color:#9ca3af;">{{ entry.date }}</span>
+            </div>
+ 
+            <div style="margin-top:10px;">
+                <div class="ats-container">
+                    {% if entry.score >= 75 %}
+                        <div class="ats-bar score-green" data-width="{{ entry.score }}">{{ entry.score }}%</div>
+                    {% elif entry.score >= 40 %}
+                        <div class="ats-bar score-orange" data-width="{{ entry.score }}">{{ entry.score }}%</div>
+                    {% else %}
+                        <div class="ats-bar score-red" data-width="{{ entry.score }}">{{ entry.score }}%</div>
+                    {% endif %}
+                </div>
+            </div>
+ 
+            <p style="margin-top:8px; font-size:13px; color:#6b7280;">
+                <strong>Skills:</strong> {{ entry.skills }}
+            </p>
+ 
+            {% if entry.missing %}
+            <p style="font-size:13px; color:#6b7280; margin-top:4px;">
+                <strong>Missing:</strong>
+                {% for skill in entry.missing %}
+                    <span class="badge" style="background:#fef3c7; color:#92400e;">{{ skill }}</span>
+                {% endfor %}
+            </p>
+            {% endif %}
+ 
+        </div>
+        {% endfor %}
+ 
+    {% else %}
+        <div style="text-align:center; padding:60px 0; color:#9ca3af;">
+            <p style="font-size:48px;">📄</p>
+            <p style="font-size:16px; margin-top:12px;">No history yet.</p>
+            <p style="font-size:14px;">Generate your first resume to see it here!</p>
+            <a href="/dashboard"><button style="margin-top:16px;">Go to Dashboard</button></a>
+        </div>
+    {% endif %}
+ 
+    <div style="text-align:center; margin-top:20px;">
+        <a href="/profile" style="color:#2563eb; font-size:14px;">👤 Edit Profile</a>
+    </div>
+</div>
+ 
+<script>
+document.querySelectorAll('.ats-bar').forEach(function(bar) {
+    var w = bar.getAttribute('data-width');
+    if (w) bar.style.width = w + '%';
+});
+</script>
+ 
+</body>
+</html>
