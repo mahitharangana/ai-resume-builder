@@ -154,11 +154,26 @@ def history():
     if 'user' not in session:
         return redirect('/login')
 
-    # Load all resume histories
-    histories = load_json(HISTORY_FILE)  # HISTORY_FILE = path to your JSON storing resumes
+    # Load history safely
+    if not os.path.exists(HISTORY_FILE):
+        histories = {}
+    else:
+        try:
+            with open(HISTORY_FILE, "r") as f:
+                histories = json.load(f)
+        except json.JSONDecodeError:
+            histories = {}
 
-    # Get only the logged-in user's entries
     user_entries = histories.get(session['user'], [])
+
+    # Ensure each entry has required keys
+    for e in user_entries:
+        e.setdefault('name', 'Unknown')
+        e.setdefault('job', '')
+        e.setdefault('skills', '')
+        e.setdefault('missing', [])
+        e.setdefault('score', 0)
+        e.setdefault('date', '')
 
     # Sort by date descending and take last 10
     user_entries = sorted(user_entries, key=lambda x: x.get('date', ''), reverse=True)[:10]
