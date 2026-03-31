@@ -142,13 +142,15 @@ def history():
 @app.route('/generate_summary', methods=['POST'])
 def generate_summary():
     prompt = f"""
-    Create a professional resume summary:
+Create a professional resume summary:
 
-    Name: {request.form['name']}
-    Role: {request.form['job']}
-    Skills: {request.form['skills']}
-    Experience: {request.form['experience']}
-    """
+Name: {request.form.get('name', '')}
+Role: {request.form.get('job', '')}
+Skills: {request.form.get('skills', '')}
+Experience: {request.form.get('experience', '')}
+Projects: {request.form.get('projects', '')}
+Education: {request.form.get('education', '')}
+"""
     summary = call_ai(prompt)
     return jsonify({"summary": summary})
 
