@@ -1,31 +1,126 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
     <title>Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 <body>
-    <h2>Welcome, {{ session['user'] }}</h2>
-    <form method="POST">
-        <label>Name:</label><br>
-        <input type="text" name="name" required><br><br>
-
-        <label>Job Role:</label><br>
-        <select name="job" required>
-            <option value="Data Scientist">Data Scientist</option>
-            <option value="Web Developer">Web Developer</option>
-            <option value="AI Engineer">AI Engineer</option>
-            <option value="Cloud Engineer">Cloud Engineer</option>
-            <option value="Cybersecurity Analyst">Cybersecurity Analyst</option>
-            <option value="Software Engineer">Software Engineer</option>
-        </select><br><br>
-
-        <label>Skills (comma separated):</label><br>
-        <input type="text" name="skills" placeholder="Python, SQL, Java" required><br><br>
-
-        <label>Experience:</label><br>
-        <textarea name="experience" placeholder="Write your experience here"></textarea><br><br>
-
-        <button type="submit">Submit</button>
+ 
+<div class="navbar">
+    🧠 AI Resume Builder
+    <span style="float:right; font-size:14px; font-weight:400;">
+        <a href="/profile" style="color:rgba(255,255,255,0.8);">👤 Profile</a> &nbsp;|&nbsp;
+        <a href="/history" style="color:rgba(255,255,255,0.8);">📋 History</a> &nbsp;|&nbsp;
+        <a href="/logout" style="color:rgba(255,255,255,0.8);">Logout</a>
+    </span>
+</div>
+ 
+<div class="container">
+    <h2 style="margin-bottom:4px;">Enter Your Details</h2>
+    <p style="color:#6b7280; font-size:13px; margin-bottom:18px;">
+        Fields are pre-filled from your profile.
+        <a href="/profile" style="color:#2563eb;">Edit profile →</a>
+    </p>
+ 
+    <form method="POST" class="form-grid">
+        <div>
+            <label class="field-label">Full Name</label>
+            <input name="name" placeholder="Full Name" value="{{ profile.name }}" required>
+        </div>
+        <div>
+            <label class="field-label">Phone</label>
+            <input name="phone" placeholder="Phone" value="{{ profile.phone }}">
+        </div>
+        <div>
+            <label class="field-label">Email</label>
+            <input name="email" placeholder="Email" value="{{ profile.email }}">
+        </div>
+        <div>
+            <label class="field-label">Job Role</label>
+            <select name="job">
+                {% for role in ["Data Scientist", "Web Developer", "AI Engineer", "Data Analyst", "Backend Developer"] %}
+                <option value="{{ role }}" {% if profile.job == role %}selected{% endif %}>{{ role }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="full">
+            <label class="field-label">Skills (comma separated)</label>
+            <textarea name="skills" rows="3" placeholder="Skills">{{ profile.skills }}</textarea>
+        </div>
+        <div class="full">
+            <label class="field-label">Experience</label>
+            <textarea name="experience" rows="4" placeholder="Experience">{{ profile.experience }}</textarea>
+        </div>
+        <div class="full">
+            <label class="field-label">Projects</label>
+            <textarea name="projects" rows="4" placeholder="Projects">{{ profile.projects }}</textarea>
+        </div>
+        <div class="full">
+            <label class="field-label">Education</label>
+            <textarea name="education" rows="3" placeholder="Education">{{ profile.education }}</textarea>
+        </div>
+ 
+        <!-- AI SUMMARY -->
+        <div class="full">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                <label class="field-label">Professional Summary</label>
+                <button type="button" id="gen-btn" onclick="generateSummary()"
+                    style="width:auto; margin-top:0; padding:6px 14px; font-size:13px; background:#7c3aed;">
+                    ✨ AI Generate
+                </button>
+            </div>
+            <textarea id="summary-box" name="summary" rows="4"
+                placeholder="Write your summary or click ✨ AI Generate...">{{ profile.summary }}</textarea>
+        </div>
+ 
+        <button class="full" style="margin-top:10px;">🚀 Generate Resume</button>
     </form>
+</div>
+ 
+<script>
+function generateSummary() {
+    var name       = document.querySelector('input[name="name"]').value.trim();
+    var job        = document.querySelector('select[name="job"]').value;
+    var skills     = document.querySelector('textarea[name="skills"]').value.trim();
+    var experience = document.querySelector('textarea[name="experience"]').value.trim();
+    var projects   = document.querySelector('textarea[name="projects"]').value.trim();
+    var education  = document.querySelector('textarea[name="education"]').value.trim();
+ 
+    if (!name || !skills) {
+        alert("Please fill in at least your Name and Skills first!");
+        return;
+    }
+ 
+    var btn = document.getElementById("gen-btn");
+    var box = document.getElementById("summary-box");
+    btn.innerText = "⏳ Generating...";
+    btn.disabled = true;
+    box.value = "";
+ 
+    fetch("/generate_summary", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: "name=" + encodeURIComponent(name)
+            + "&job=" + encodeURIComponent(job)
+            + "&skills=" + encodeURIComponent(skills)
+            + "&experience=" + encodeURIComponent(experience)
+            + "&projects=" + encodeURIComponent(projects)
+            + "&education=" + encodeURIComponent(education)
+    })
+    .then(function(res) { return res.json(); })
+    .then(function(d) {
+        box.value = d.summary;
+        btn.innerText = "✨ AI Generate";
+        btn.disabled = false;
+    })
+    .catch(function(err) {
+        box.value = "❌ Error: " + err.message;
+        btn.innerText = "✨ AI Generate";
+        btn.disabled = false;
+    });
+}
+</script>
+ 
 </body>
 </html>
