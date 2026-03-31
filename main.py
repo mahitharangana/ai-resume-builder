@@ -27,9 +27,19 @@ def save_users(users):
         json.dump(users, f)
 
 JOB_DATABASE = {
-    "Data Scientist": ["Python", "Machine Learning", "SQL"],
-    "Web Developer": ["HTML", "CSS", "JavaScript"],
-    "AI Engineer": ["Python", "Deep Learning"]
+    "Data Scientist": ["Python", "Machine Learning", "SQL", "Pandas", "NumPy", "Data Visualization"],
+    "Data Analyst": ["Excel", "SQL", "Python", "Power BI", "Tableau"],
+    "Web Developer": ["HTML", "CSS", "JavaScript", "React", "Node.js"],
+    "Frontend Developer": ["HTML", "CSS", "JavaScript", "React", "UI/UX"],
+    "Backend Developer": ["Python", "Node.js", "Django", "Flask", "SQL"],
+    "Full Stack Developer": ["HTML", "CSS", "JavaScript", "React", "Node.js", "MongoDB"],
+    "AI Engineer": ["Python", "Deep Learning", "TensorFlow", "PyTorch"],
+    "Machine Learning Engineer": ["Python", "Scikit-learn", "TensorFlow", "ML Algorithms"],
+    "Cloud Engineer": ["AWS", "Azure", "Docker", "Kubernetes"],
+    "DevOps Engineer": ["Docker", "Kubernetes", "CI/CD", "Jenkins", "Linux"],
+    "Cybersecurity Analyst": ["Networking", "Ethical Hacking", "Cryptography"],
+    "Mobile App Developer": ["Java", "Kotlin", "Flutter", "React Native"],
+    "Software Engineer": ["Java", "Python", "OOP", "DSA"],
 }
 
 # ---------- OPENAI FUNCTION ----------
