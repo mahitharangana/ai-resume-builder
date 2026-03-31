@@ -1,6 +1,4 @@
-flask
-flask-login
-reportlab
-gunicorn
-
-
+Flask==3.0.0
+requests==2.31.0
+reportlab==4.0.7
+gunicorn==21.2.0
