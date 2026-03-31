@@ -15,7 +15,8 @@ import os
 import openai
 
 openai.api_key = os.getenv("OPENAI_API_KEY")
-
+import os
+print("API KEY:", os.getenv("OPENAI_API_KEY"))
 # ---------- DATABASE ----------
 USERS_FILE = "users.json"
 
