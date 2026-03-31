@@ -97,14 +97,31 @@ def register():
 def dashboard():
     if 'user' not in session:
         return redirect('/login')
+
+    profiles = load_json(PROFILE_FILE)
+    user_profile = profiles.get(session['user'], {
+        "name": "",
+        "phone": "",
+        "email": "",
+        "job": "",
+        "skills": "",
+        "experience": "",
+        "projects": "",
+        "education": "",
+        "summary": ""
+    })
+
     if request.method == 'POST':
         data = request.form.to_dict()
         session['data'] = data
-        profiles = load_json(PROFILE_FILE)
+
         profiles[session['user']] = data
         save_json(PROFILE_FILE, profiles)
+
         return redirect('/result')
-    return render_template('dashboard.html')
+
+    # Pass 'profile' to the template, not 'data'
+    return render_template('dashboard.html', profile=user_profile)
 
 @app.route('/profile')
 def profile():
