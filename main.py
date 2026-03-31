@@ -153,11 +153,17 @@ def profile():
 def history():
     if 'user' not in session:
         return redirect('/login')
-    history = load_json(HISTORY_FILE)
-    user_history = history.get(session['user'], [])
-    return render_template('history.html', history=user_history)
 
-@app.route('/generate_summary', methods=['POST'])
+    # Load all resume histories
+    histories = load_json(HISTORY_FILE)  # HISTORY_FILE = path to your JSON storing resumes
+
+    # Get only the logged-in user's entries
+    user_entries = histories.get(session['user'], [])
+
+    # Sort by date descending and take last 10
+    user_entries = sorted(user_entries, key=lambda x: x.get('date', ''), reverse=True)[:10]
+
+    return render_template('history.html', entries=user_entries)
 def generate_summary():
     prompt = f"""
 Create a professional resume summary:
