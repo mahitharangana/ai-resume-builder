@@ -188,6 +188,10 @@ def download():
     buffer.seek(0)
     return send_file(buffer, as_attachment=True, download_name="resume.pdf")
 
+@app.route('/logout')
+def logout():
+    session.pop('user', None)
+    return redirect('/login')
 # ---------- RUN ----------
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0", port=10000)
