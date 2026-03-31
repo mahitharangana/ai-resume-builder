@@ -3,83 +3,64 @@ import os
 import json
 from io import BytesIO
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib.pagesizes import A4
-import openai
+
+from openai import OpenAI   # ✅ NEW IMPORT
 
 app = Flask(__name__)
 app.secret_key = "secret123"
 
-# ✅ ADD YOUR API KEY HERE
-import os
-import openai
+# ✅ OPENAI CLIENT
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-openai.api_key = os.getenv("OPENAI_API_KEY")
-import os
-print("API KEY:", os.getenv("OPENAI_API_KEY"))
 # ---------- DATABASE ----------
 USERS_FILE = "users.json"
+PROFILE_FILE = "profile.json"
+HISTORY_FILE = "history.json"
 
-def load_users():
-    if os.path.exists(USERS_FILE):
-        with open(USERS_FILE) as f:
+def load_json(file):
+    if os.path.exists(file):
+        with open(file) as f:
             return json.load(f)
     return {}
 
-def save_users(users):
-    with open(USERS_FILE, "w") as f:
-        json.dump(users, f)
+def save_json(file, data):
+    with open(file, "w") as f:
+        json.dump(data, f)
 
+# ---------- JOB DATABASE ----------
 JOB_DATABASE = {
-    "Data Scientist": ["Python", "Machine Learning", "SQL", "Pandas", "NumPy", "Data Visualization"],
-    "Data Analyst": ["Excel", "SQL", "Python", "Power BI", "Tableau"],
-    "Web Developer": ["HTML", "CSS", "JavaScript", "React", "Node.js"],
-    "Frontend Developer": ["HTML", "CSS", "JavaScript", "React", "UI/UX"],
-    "Backend Developer": ["Python", "Node.js", "Django", "Flask", "SQL"],
-    "Full Stack Developer": ["HTML", "CSS", "JavaScript", "React", "Node.js", "MongoDB"],
-    "AI Engineer": ["Python", "Deep Learning", "TensorFlow", "PyTorch"],
-    "Machine Learning Engineer": ["Python", "Scikit-learn", "TensorFlow", "ML Algorithms"],
-    "Cloud Engineer": ["AWS", "Azure", "Docker", "Kubernetes"],
-    "DevOps Engineer": ["Docker", "Kubernetes", "CI/CD", "Jenkins", "Linux"],
-    "Cybersecurity Analyst": ["Networking", "Ethical Hacking", "Cryptography"],
-    "Mobile App Developer": ["Java", "Kotlin", "Flutter", "React Native"],
-    "Software Engineer": ["Java", "Python", "OOP", "DSA"],
+    "Data Scientist": ["Python", "Machine Learning", "SQL"],
+    "Web Developer": ["HTML", "CSS", "JavaScript"],
+    "AI Engineer": ["Python", "Deep Learning"],
+    "Cloud Engineer": ["AWS", "Docker"],
+    "Cybersecurity Analyst": ["Networking", "Ethical Hacking"],
+    "Software Engineer": ["Java", "Python", "DSA"]
 }
 
 # ---------- OPENAI FUNCTION ----------
 def call_ai(prompt):
     try:
-        response = openai.ChatCompletion.create(
+        response = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
                 {"role": "system", "content": "You are a professional resume coach."},
                 {"role": "user", "content": prompt}
             ],
-            temperature=0.7,
             max_tokens=200
         )
-        return response['choices'][0]['message']['content']
+        return response.choices[0].message.content
+
     except Exception as e:
         return "❌ API Error: " + str(e)
 
-# ---------- FUNCTIONS ----------
-def generate_summary(name, role):
-    return f"{name} is an aspiring {role} with strong technical skills."
-
+# ---------- SCORE ----------
 def calculate_score(user_skills, role):
     required = JOB_DATABASE.get(role, [])
+    user = [s.lower() for s in user_skills]
 
-    user = [s.strip().lower() for s in user_skills]
-    required_lower = [r.lower() for r in required]
-
-    matched = 0
-
-    for r in required_lower:
-        for u in user:
-            if r in u or u in r:   # ✅ partial match logic
-                matched += 1
-                break
-
+    matched = sum(1 for r in required if any(r.lower() in u for u in user))
     score = (matched / len(required)) * 100 if required else 0
 
     missing = [r for r in required if not any(r.lower() in u for u in user)]
@@ -94,37 +75,38 @@ def home():
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+    users = load_json(USERS_FILE)
     error = None
+
     if request.method == 'POST':
-        users = load_users()
-        username = request.form.get('username', '')
-        password = request.form.get('password', '')
-        if users.get(username) == password:
-            session['user'] = username
+        u = request.form['username']
+        p = request.form['password']
+
+        if users.get(u) == p:
+            session['user'] = u
             return redirect('/dashboard')
         else:
-            error = "Invalid username or password."
+            error = "Invalid login"
+
     return render_template('login.html', error=error)
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
+    users = load_json(USERS_FILE)
     error = None
-    if request.method == 'POST':
-        users = load_users()
-        username = request.form.get('username', '')
-        password = request.form.get('password', '')
-        if username in users:
-            error = "Username already exists."
-        else:
-            users[username] = password
-            save_users(users)
-            return redirect('/login')
-    return render_template('register.html', error=error)
 
-@app.route('/logout')
-def logout():
-    session.clear()
-    return redirect('/')
+    if request.method == 'POST':
+        u = request.form['username']
+        p = request.form['password']
+
+        if u in users:
+            error = "User exists"
+        else:
+            users[u] = p
+            save_json(USERS_FILE, users)
+            return redirect('/login')
+
+    return render_template('register.html', error=error)
 
 @app.route('/dashboard', methods=['GET', 'POST'])
 def dashboard():
@@ -132,41 +114,48 @@ def dashboard():
         return redirect('/login')
 
     if request.method == 'POST':
-        session['data'] = {
-            'name': request.form.get('name', ''),
-            'email': request.form.get('email', ''),
-            'phone': request.form.get('phone', ''),
-            'job': request.form.get('job', ''),
-            'skills': request.form.get('skills', ''),
-            'experience': request.form.get('experience', ''),
-            'projects': request.form.get('projects', ''),
-            'education': request.form.get('education', ''),
-            'summary': request.form.get('summary', '')
-        }
+        data = request.form.to_dict()
+        session['data'] = data
+
+        profiles = load_json(PROFILE_FILE)
+        profiles[session['user']] = data
+        save_json(PROFILE_FILE, profiles)
+
         return redirect('/result')
 
-    return render_template('dashboard.html', user=session['user'], profile={})
+    return render_template('dashboard.html')
+
+# ✅ PROFILE PAGE
+@app.route('/profile')
+def profile():
+    if 'user' not in session:
+        return redirect('/login')
+
+    profiles = load_json(PROFILE_FILE)
+    user_data = profiles.get(session['user'], {})
+
+    return render_template('profile.html', data=user_data)
+
+# ✅ HISTORY PAGE
+@app.route('/history')
+def history():
+    if 'user' not in session:
+        return redirect('/login')
+
+    history = load_json(HISTORY_FILE)
+    user_history = history.get(session['user'], [])
+
+    return render_template('history.html', history=user_history)
 
 @app.route('/generate_summary', methods=['POST'])
-def generate_summary_ai():
-    name = request.form.get('name', '')
-    job = request.form.get('job', '')
-    skills = request.form.get('skills', '')
-    experience = request.form.get('experience', '')
-    projects = request.form.get('projects', '')
-    education = request.form.get('education', '')
-
+def generate_summary():
     prompt = f"""
-    Create a professional resume summary.
+    Create a professional resume summary:
 
-    Name: {name}
-    Role: {job}
-    Skills: {skills}
-    Experience: {experience}
-    Projects: {projects}
-    Education: {education}
-
-    Keep it short, impactful (3-4 lines).
+    Name: {request.form['name']}
+    Role: {request.form['job']}
+    Skills: {request.form['skills']}
+    Experience: {request.form['experience']}
     """
 
     summary = call_ai(prompt)
@@ -174,60 +163,23 @@ def generate_summary_ai():
 
 @app.route('/result')
 def result():
-    if 'user' not in session:
-        return redirect('/login')
-
     data = session.get('data')
     if not data:
         return redirect('/dashboard')
 
-    skill_list = [s.strip() for s in data['skills'].split(',') if s.strip()]
-    score, missing = calculate_score(skill_list, data['job'])
+    skills = [s.strip() for s in data['skills'].split(',')]
+    score, missing = calculate_score(skills, data['job'])
 
-    summary = data.get('summary') or generate_summary(data['name'], data['job'])
+    # save history
+    history = load_json(HISTORY_FILE)
+    history.setdefault(session['user'], []).append(data)
+    save_json(HISTORY_FILE, history)
 
-    return render_template('result.html', data=data, score=score, missing=missing, summary=summary)
-
-@app.route('/chat', methods=['POST'])
-def chat():
-    user_msg = request.form.get('msg', '').strip()
-    if not user_msg:
-        return jsonify({"reply": "⚠️ Empty message"})
-
-    data = session.get('data', {})
-    skills = data.get('skills', '')
-    role = data.get('job', '')
-    name = data.get('name', '')
-
-    skill_list = [s.strip() for s in skills.split(',') if s.strip()]
-    score, missing = calculate_score(skill_list, role)
-
-    prompt = f"""
-    Candidate Name: {name}
-    Role: {role}
-    Skills: {skills}
-    Resume Score: {score}%
-    Missing Skills: {', '.join(missing) if missing else 'None'}
-
-    Question: {user_msg}
-
-    Give short, practical advice (3-4 lines).
-    """
-
-    reply = call_ai(prompt)
-    return jsonify({"reply": reply})
+    return render_template('result.html', data=data, score=score, missing=missing)
 
 @app.route('/download')
 def download():
-    if 'user' not in session:
-        return redirect('/login')
-
     data = session.get('data')
-    if not data:
-        return redirect('/dashboard')
-
-    skill_list = [s.strip() for s in data['skills'].split(',') if s.strip()]
-    score, missing = calculate_score(skill_list, data['job'])
 
     buffer = BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=A4)
@@ -236,32 +188,13 @@ def download():
     story = []
 
     story.append(Paragraph(data['name'], styles['Heading2']))
-    story.append(Paragraph(f"{data['email']} | {data['phone']}", styles['Normal']))
-    story.append(Spacer(1, 10))
-
-    for key in ["skills", "experience", "projects", "education"]:
-        if data.get(key):
-            story.append(Paragraph(key.capitalize(), styles['Heading3']))
-            story.append(Paragraph(data[key], styles['Normal']))
-            story.append(Spacer(1, 10))
-
-    story.append(Paragraph(f"ATS Score: {score}%", styles['Heading3']))
+    story.append(Paragraph(data['skills'], styles['Normal']))
 
     doc.build(story)
     buffer.seek(0)
 
-    return send_file(buffer, as_attachment=True,
-                     download_name="resume.pdf",
-                     mimetype='application/pdf')
+    return send_file(buffer, as_attachment=True, download_name="resume.pdf")
 
-@app.route('/get_skills')
-def get_skills():
-    role = request.args.get('role')
-    skills = JOB_DATABASE.get(role, [])
-    return jsonify({"skills": skills})
-
-import os
-
+# ---------- RUN ----------
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port)
+    app.run(debug=True)
