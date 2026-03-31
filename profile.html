@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>My Profile</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+ 
+<div class="navbar">
+    🧠 AI Resume Builder
+    <span style="float:right; font-size:14px; font-weight:400;">
+        Hi, {{ user }} &nbsp;|&nbsp;
+        <a href="/dashboard" style="color:rgba(255,255,255,0.8);">Dashboard</a> &nbsp;|&nbsp;
+        <a href="/logout" style="color:rgba(255,255,255,0.8);">Logout</a>
+    </span>
+</div>
+ 
+<div class="container">
+    <h2 style="margin-bottom:6px;">👤 My Profile</h2>
+    <p style="color:#6b7280; margin-bottom:20px; font-size:14px;">
+        Your saved info will auto-fill the resume form every time you log in.
+    </p>
+ 
+    {% if saved %}
+    <div class="success">✅ Profile saved successfully!</div>
+    {% endif %}
+ 
+    <form method="POST">
+        <div class="form-grid">
+            <div>
+                <label class="field-label">Full Name</label>
+                <input name="name" placeholder="Full Name" value="{{ profile.name }}">
+            </div>
+            <div>
+                <label class="field-label">Phone</label>
+                <input name="phone" placeholder="Phone" value="{{ profile.phone }}">
+            </div>
+            <div>
+                <label class="field-label">Email</label>
+                <input name="email" placeholder="Email" value="{{ profile.email }}">
+            </div>
+            <div>
+                <label class="field-label">Default Job Role</label>
+                <select name="job">
+                    {% for role in ["Data Scientist", "Web Developer", "AI Engineer", "Data Analyst", "Backend Developer"] %}
+                    <option value="{{ role }}" {% if profile.job == role %}selected{% endif %}>{{ role }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="full">
+                <label class="field-label">Skills (comma separated)</label>
+                <textarea name="skills" rows="3" placeholder="Python, SQL, Machine Learning...">{{ profile.skills }}</textarea>
+            </div>
+            <div class="full">
+                <label class="field-label">Education</label>
+                <textarea name="education" rows="3" placeholder="B.Tech Computer Science, XYZ University...">{{ profile.education }}</textarea>
+            </div>
+            <div class="full">
+                <label class="field-label">Experience</label>
+                <textarea name="experience" rows="4" placeholder="Internship / Work experience...">{{ profile.experience }}</textarea>
+            </div>
+            <div class="full">
+                <label class="field-label">Projects</label>
+                <textarea name="projects" rows="4" placeholder="Projects you've worked on...">{{ profile.projects }}</textarea>
+            </div>
+            <div class="full">
+                <label class="field-label">Professional Summary</label>
+                <textarea name="summary" rows="4" placeholder="A short bio about yourself...">{{ profile.summary }}</textarea>
+            </div>
+        </div>
+ 
+        <button class="full" style="margin-top:20px;">💾 Save Profile</button>
+    </form>
+ 
+    <div style="text-align:center; margin-top:16px;">
+        <a href="/history" style="color:#2563eb; font-size:14px;">📋 View Resume History</a>
+    </div>
+</div>
+ 
+</body>
+</html>
