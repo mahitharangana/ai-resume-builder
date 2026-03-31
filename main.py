@@ -43,20 +43,23 @@ JOB_DATABASE = {
 }
 
 # ---------- OPENAI FUNCTION ----------
+from openai import OpenAI
+import os
+
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
 def call_ai(prompt):
     try:
         response = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
-                {"role": "system", "content": "You are a professional resume coach."},
                 {"role": "user", "content": prompt}
-            ],
-            temperature=0.7,
-            max_tokens=200
+            ]
         )
         return response.choices[0].message.content
+
     except Exception as e:
-        return "❌ API Error: " + str(e)
+        return f"Error: {str(e)}"
 
 # ---------- SCORE ----------
 def calculate_score(user_skills, role):
