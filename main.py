@@ -123,13 +123,31 @@ def dashboard():
     # Pass 'profile' to the template, not 'data'
     return render_template('dashboard.html', profile=user_profile)
 
-@app.route('/profile')
+@app.route('/profile', methods=['GET', 'POST'])
 def profile():
     if 'user' not in session:
         return redirect('/login')
-    profiles = load_json(PROFILE_FILE)
-    user_data = profiles.get(session['user'], {})
-    return render_template('profile.html', data=user_data)
+
+    users_profiles = load_json(PROFILE_FILE)
+    user_profile = users_profiles.get(session['user'], {
+        "name": "",
+        "phone": "",
+        "email": "",
+        "job": "",
+        "skills": "",
+        "experience": "",
+        "projects": "",
+        "education": "",
+        "summary": ""
+    })
+
+    if request.method == 'POST':
+        data = request.form.to_dict()
+        users_profiles[session['user']] = data
+        save_json(PROFILE_FILE, users_profiles)
+        return render_template('profile.html', profile=data, user=session['user'], saved=True)
+
+    return render_template('profile.html', profile=user_profile, user=session['user'], saved=False)
 
 @app.route('/history')
 def history():
