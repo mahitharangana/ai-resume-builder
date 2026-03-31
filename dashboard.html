@@ -8,7 +8,7 @@
 <body>
  
 <div class="navbar">
-    🧠 AI Resume Builder
+     AI Resume Builder
     <span style="float:right; font-size:14px; font-weight:400;">
         <a href="/profile" style="color:rgba(255,255,255,0.8);">👤 Profile</a> &nbsp;|&nbsp;
         <a href="/history" style="color:rgba(255,255,255,0.8);">📋 History</a> &nbsp;|&nbsp;
@@ -39,10 +39,19 @@
         <div>
             <label class="field-label">Job Role</label>
             <select name="job">
-                {% for role in ["Data Scientist", "Web Developer", "AI Engineer", "Data Analyst", "Backend Developer"] %}
-                <option value="{{ role }}" {% if profile.job == role %}selected{% endif %}>{{ role }}</option>
-                {% endfor %}
-            </select>
+    {% for role in [
+        "Data Scientist", "Data Analyst", "Web Developer", 
+        "Frontend Developer", "Backend Developer", "Full Stack Developer",
+        "AI Engineer", "Machine Learning Engineer",
+        "Cloud Engineer", "DevOps Engineer",
+        "Cybersecurity Analyst", "Mobile App Developer",
+        "Software Engineer"
+    ] %}
+    <option value="{{ role }}" {% if profile.job == role %}selected{% endif %}>
+        {{ role }}
+    </option>
+    {% endfor %}
+</select>
         </div>
         <div class="full">
             <label class="field-label">Skills (comma separated)</label>
