@@ -64,10 +64,22 @@ def generate_summary(name, role):
 
 def calculate_score(user_skills, role):
     required = JOB_DATABASE.get(role, [])
+
     user = [s.strip().lower() for s in user_skills]
-    matched = len(set(user).intersection([r.lower() for r in required]))
+    required_lower = [r.lower() for r in required]
+
+    matched = 0
+
+    for r in required_lower:
+        for u in user:
+            if r in u or u in r:   # ✅ partial match logic
+                matched += 1
+                break
+
     score = (matched / len(required)) * 100 if required else 0
-    missing = [r for r in required if r.lower() not in user]
+
+    missing = [r for r in required if not any(r.lower() in u for u in user)]
+
     return round(score, 2), missing
 
 # ---------- ROUTES ----------
@@ -237,6 +249,12 @@ def download():
     return send_file(buffer, as_attachment=True,
                      download_name="resume.pdf",
                      mimetype='application/pdf')
+
+@app.route('/get_skills')
+def get_skills():
+    role = request.args.get('role')
+    skills = JOB_DATABASE.get(role, [])
+    return jsonify({"skills": skills})
 
 if __name__ == '__main__':
     app.run(debug=True)
