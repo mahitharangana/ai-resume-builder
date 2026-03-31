@@ -131,6 +131,28 @@ function generateSummary() {
     });
 }
 </script>
- 
+ <script>
+const jobSelect = document.querySelector('select[name="job"]');
+const skillBox = document.querySelector('textarea[name="skills"]');
+const suggestionDiv = document.getElementById("skill-suggestions");
+
+// Load suggestions when role changes
+jobSelect.addEventListener("change", function () {
+    fetch("/get_skills?role=" + encodeURIComponent(jobSelect.value))
+    .then(res => res.json())
+    .then(data => {
+        if (data.skills.length > 0) {
+            suggestionDiv.innerHTML = "Suggested: " + data.skills.join(", ");
+        } else {
+            suggestionDiv.innerHTML = "";
+        }
+    });
+});
+
+// Click to auto-fill skills
+suggestionDiv.addEventListener("click", function () {
+    skillBox.value = suggestionDiv.innerText.replace("Suggested: ", "");
+});
+</script>
 </body>
 </html>
