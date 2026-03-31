@@ -1,1 +1,14 @@
-{}
+
+  {
+    "testuser": [
+        {
+            "name": "Alice",
+            "job": "Data Scientist",
+            "skills": "Python, ML",
+            "missing": ["SQL"],
+            "score": 85,
+            "date": "2026-04-01"
+        }
+    ]
+}
+
