@@ -12,8 +12,8 @@ app = Flask(__name__)
 app.secret_key = "secret123"
 
 # ✅ OPENAI CLIENT
-import os
 from openai import OpenAI
+import os
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
